@@ -3,119 +3,117 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bertahan Hidup: Rumah Hantu Darmo</title>
+<title>Rumah Hantu Darmo 3D</title>
 <style>
-  body, html {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    font-family: 'Arial', sans-serif;
-    background-color: #000;
-  }
-  #game-container {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    background-image: url('https://i.imgur.com/3qVZ0A3.jpg'); /* Ganti dengan interior rumah Darmo */
-    background-size: cover;
-    background-position: center;
-  }
-  #message {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.7);
-    padding: 10px 20px;
-    border-radius: 5px;
-    font-size: 18px;
-    color: #fff;
-    display: none;
-  }
-  .hantu {
-    position: absolute;
-    width: 60px;
-    height: 60px;
-    background: rgba(255,0,0,0.5);
-    border-radius: 50%;
-    pointer-events: none;
-  }
+  body { margin: 0; overflow: hidden; background: #000; }
+  canvas { display: block; }
 </style>
 </head>
 <body>
 
-<div id="game-container">
-  <div id="message"></div>
-  <div class="hantu" id="hantu1" style="top: 100px; left: 200px;"></div>
-  <div class="hantu" id="hantu2" style="top: 300px; left: 500px;"></div>
-</div>
-
-<audio id="scream" src="https://www.soundjay.com/human/sounds/scream-01.mp3"></audio>
-<audio id="footstep" src="https://www.soundjay.com/human/sounds/footsteps-1.mp3" loop></audio>
+<script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.157.0/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
-const gameContainer = document.getElementById('game-container');
-const message = document.getElementById('message');
-const hantus = [
-  { el: document.getElementById('hantu1'), dx: 1, dy: 0.5 },
-  { el: document.getElementById('hantu2'), dx: -0.5, dy: 1 }
-];
+// ================== SETUP SCENE ==================
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
 
-// Player invisible, tapi bisa “jalan” dengan tombol panah
-let playerPos = { x: 0, y: 0 };
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 
-document.addEventListener('keydown', (e) => {
-  const step = 20;
-  if(e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') playerPos.y -= step;
-  if(e.key === 'ArrowDown' || e.key.toLowerCase() === 's') playerPos.y += step;
-  if(e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') playerPos.x -= step;
-  if(e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') playerPos.x += step;
+// Renderer
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-  // Batasi agar tidak keluar layar
-  playerPos.x = Math.max(0, Math.min(gameContainer.clientWidth, playerPos.x));
-  playerPos.y = Math.max(0, Math.min(gameContainer.clientHeight, playerPos.y));
+// ================== LIGHT ==================
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+scene.add(ambientLight);
 
-  // Mainkan suara langkah
-  const footstep = document.getElementById('footstep');
-  footstep.currentTime = 0;
-  footstep.play();
+const pointLight = new THREE.PointLight(0xff0000, 1, 50);
+pointLight.position.set(0, 10, 0);
+scene.add(pointLight);
+
+// ================== FLOOR ==================
+const floorGeometry = new THREE.BoxGeometry(50, 1, 50);
+const floorMaterial = new THREE.MeshStandardMaterial({color: 0x222222});
+const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+floor.position.y = -0.5;
+scene.add(floor);
+
+// ================== WALLS ==================
+function createWall(x,z,rotation=0){
+  const wallGeo = new THREE.BoxGeometry(1,10,50);
+  const wallMat = new THREE.MeshStandardMaterial({color:0x333333});
+  const wall = new THREE.Mesh(wallGeo, wallMat);
+  wall.position.set(x,5,z);
+  wall.rotation.y = rotation;
+  scene.add(wall);
+}
+createWall(-25,0); // kiri
+createWall(25,0);  // kanan
+createWall(0,-25, Math.PI/2); // belakang
+createWall(0,25, Math.PI/2);  // depan
+
+// ================== PLAYER CONTROLS ==================
+const controls = new THREE.PointerLockControls(camera, document.body);
+document.body.addEventListener('click', () => { controls.lock(); });
+camera.position.set(0,2,20);
+
+// ================== HANTU ==================
+const hantuGeometry = new THREE.SphereGeometry(0.5,32,32);
+const hantuMaterial = new THREE.MeshStandardMaterial({color:0xff0000, transparent:true, opacity:0.6});
+const hantu = new THREE.Mesh(hantuGeometry,hantuMaterial);
+hantu.position.set(10,0.5,10);
+scene.add(hantu);
+
+let hantuDir = new THREE.Vector3(1,0,1).normalize();
+
+// ================== INPUT ==================
+const move = {forward:false,back:false,left:false,right:false};
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='w') move.forward=true;
+  if(e.key==='s') move.back=true;
+  if(e.key==='a') move.left=true;
+  if(e.key==='d') move.right=true;
+});
+document.addEventListener('keyup', (e)=>{
+  if(e.key==='w') move.forward=false;
+  if(e.key==='s') move.back=false;
+  if(e.key==='a') move.left=false;
+  if(e.key==='d') move.right=false;
 });
 
-// Fungsi hantu bergerak sendiri
-function moveHantu() {
-  hantus.forEach(h => {
-    const rect = h.el.getBoundingClientRect();
-    let newX = rect.left + h.dx;
-    let newY = rect.top + h.dy;
+// ================== ANIMATE ==================
+function animate(){
+  requestAnimationFrame(animate);
 
-    // Pantulkan ke dinding rumah
-    if(newX < 0 || newX > gameContainer.clientWidth - rect.width) h.dx *= -1;
-    if(newY < 0 || newY > gameContainer.clientHeight - rect.height) h.dy *= -1;
+  // Player movement
+  const speed = 0.2;
+  if(move.forward) controls.moveForward(speed);
+  if(move.back) controls.moveForward(-speed);
+  if(move.left) controls.moveRight(-speed);
+  if(move.right) controls.moveRight(speed);
 
-    h.el.style.left = (rect.left + h.dx) + 'px';
-    h.el.style.top = (rect.top + h.dy) + 'px';
-  });
-  requestAnimationFrame(moveHantu);
+  // Hantu jalan sendiri
+  hantu.position.add(hantuDir.clone().multiplyScalar(0.05));
+
+  // Pantulkan hantu di dinding
+  if(Math.abs(hantu.position.x) > 24) hantuDir.x *= -1;
+  if(Math.abs(hantu.position.z) > 24) hantuDir.z *= -1;
+
+  renderer.render(scene,camera);
 }
 
-// Tampilkan pesan horor acak
-function randomMessage() {
-  const messages = [
-    "Terdengar langkah di lantai atas...",
-    "Ada bayangan melintas di koridor...",
-    "Pintu berdecit dengan sendirinya...",
-    "Bisikan halus terdengar di telinga..."
-  ];
-  message.textContent = messages[Math.floor(Math.random()*messages.length)];
-  message.style.display = 'block';
-  setTimeout(() => message.style.display = 'none', 4000);
-}
+animate();
 
-setInterval(randomMessage, 7000);
+// ================== RESIZE ==================
+window.addEventListener('resize', ()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-// Start
-moveHantu();
 </script>
-
 </body>
 </html>
