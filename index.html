@@ -3,39 +3,60 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rumah Hantu Darmo FP Horror</title>
+<title>Rumah Hantu Darmo HP</title>
 <style>
-  body { margin:0; overflow:hidden; background:#000; }
+  body { margin:0; overflow:hidden; background:#000; touch-action: none; }
   canvas { display:block; }
-  #info { position:absolute; top:10px; left:10px; color:white; font-family:sans-serif; }
+
+  /* Joystick virtual */
+  #joystickBase {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    width: 100px;
+    height: 100px;
+    background: rgba(200,200,200,0.2);
+    border-radius: 50%;
+    touch-action: none;
+  }
+  #joystickStick {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 50%;
+    left: 25px;
+    top: 25px;
+    touch-action: none;
+  }
 </style>
 </head>
 <body>
 
-<div id="info">Klik layar untuk mulai. Gunakan WASD untuk bergerak, mouse untuk melihat.</div>
+<div id="joystickBase">
+  <div id="joystickStick"></div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.157.0/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
 // ================== SCENE ==================
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000000); // hitam netral
+scene.background = new THREE.Color(0x000000);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// ================== FLOOR ==================
+// ================== FLOOR & WALLS ==================
 const floor = new THREE.Mesh(
   new THREE.BoxGeometry(50,1,50),
   new THREE.MeshStandardMaterial({color:0x444444})
 );
-floor.position.y = -0.5;
+floor.position.y=-0.5;
 scene.add(floor);
 
-// ================== WALLS ==================
 function createWall(x,z,rotation=0){
   const wall = new THREE.Mesh(
     new THREE.BoxGeometry(1,10,50),
@@ -50,27 +71,39 @@ createWall(25,0);
 createWall(0,-25, Math.PI/2);
 createWall(0,25, Math.PI/2);
 
-// ================== Benda-Benda Rumah ==================
+// ================== Benda-Benda ==================
 function createBox(x,y,z,sx,sy,sz,color){
-  const mat = new THREE.MeshStandardMaterial({color:color});
-  const geo = new THREE.BoxGeometry(sx,sy,sz);
-  const mesh = new THREE.Mesh(geo, mat);
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(sx,sy,sz),
+    new THREE.MeshStandardMaterial({color:color})
+  );
   mesh.position.set(x,y,z);
   scene.add(mesh);
   return mesh;
 }
 
-// Contoh benda di rumah
+// Contoh benda
 createBox(5,1,5,4,2,2,0x8B4513); // meja
 createBox(3,1,5,1,2,1,0x654321); // kursi
 createBox(7,1,5,1,2,1,0x654321);
 createBox(-5,3,-5,3,6,2,0x4444aa); // lemari
 createBox(-2,0.5,3,1,1,1,0xaa4444); // kotak
 
-// ================== PLAYER ==================
-const controls = new THREE.PointerLockControls(camera, document.body);
-document.body.addEventListener('click', ()=>controls.lock());
-camera.position.set(0,2,20);
+// ================== LIGHT ==================
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+scene.add(ambientLight);
+
+function createLamp(x,y,z,intensity){
+  const lamp = new THREE.PointLight(0xffffff,intensity,15);
+  lamp.position.set(x,y,z);
+  scene.add(lamp);
+  return lamp;
+}
+
+// Lampu rumah
+createLamp(0,8,0,1);
+createLamp(5,4,5,0.6);
+createLamp(-5,4,-5,0.4);
 
 // ================== HANTU ==================
 function createHantu(x,z,color){
@@ -87,48 +120,66 @@ const hantus = [
   {mesh:createHantu(-10,-5,0xff8844), dir:new THREE.Vector3(-1,0,0.5).normalize()}
 ];
 
-// ================== LAMPU DYNAMIC ==================
-let lamps = [];
-function createLamp(x,y,z,intensity){
-  const lamp = new THREE.PointLight(0xffffff, intensity, 15);
-  lamp.position.set(x,y,z);
-  scene.add(lamp);
-  lamps.push(lamp);
-  return lamp;
-}
+// ================== CAMERA ==================
+camera.position.set(0,2,20);
+let velocity = new THREE.Vector3(0,0,0);
 
-// Lampu di rumah, jumlah menentukan kecerahan
-createLamp(0,8,0,1);   // lampu gantung
-createLamp(5,4,5,0.6); // lampu meja
-createLamp(-5,4,-5,0.4); // lampu lemari
+// ================== JOYSTICK ==================
+const joystickBase = document.getElementById('joystickBase');
+const joystickStick = document.getElementById('joystickStick');
+let touchId = null;
+let startX=0, startY=0, moveX=0, moveY=0;
 
-// ================== INPUT ==================
-const move = {forward:false,back:false,left:false,right:false};
-document.addEventListener('keydown', e=>{
-  if(e.key==='w') move.forward=true;
-  if(e.key==='s') move.back=true;
-  if(e.key==='a') move.left=true;
-  if(e.key==='d') move.right=true;
+joystickBase.addEventListener('touchstart', e=>{
+  e.preventDefault();
+  touchId = e.changedTouches[0].identifier;
+  startX = e.changedTouches[0].clientX;
+  startY = e.changedTouches[0].clientY;
 });
-document.addEventListener('keyup', e=>{
-  if(e.key==='w') move.forward=false;
-  if(e.key==='s') move.back=false;
-  if(e.key==='a') move.left=false;
-  if(e.key==='d') move.right=false;
+
+joystickBase.addEventListener('touchmove', e=>{
+  e.preventDefault();
+  for(let t of e.changedTouches){
+    if(t.identifier === touchId){
+      moveX = t.clientX - startX;
+      moveY = t.clientY - startY;
+      // batas stick
+      const maxDist = 40;
+      const dist = Math.min(maxDist, Math.sqrt(moveX*moveX + moveY*moveY));
+      const angle = Math.atan2(moveY, moveX);
+      joystickStick.style.left = `${25 + dist*Math.cos(angle)}px`;
+      joystickStick.style.top = `${25 + dist*Math.sin(angle)}px`;
+    }
+  }
+});
+
+joystickBase.addEventListener('touchend', e=>{
+  e.preventDefault();
+  for(let t of e.changedTouches){
+    if(t.identifier === touchId){
+      touchId = null;
+      moveX=0;
+      moveY=0;
+      joystickStick.style.left='25px';
+      joystickStick.style.top='25px';
+    }
+  }
 });
 
 // ================== ANIMATE ==================
 function animate(){
   requestAnimationFrame(animate);
 
-  // Player movement
-  const speed = 0.2;
-  if(move.forward) controls.moveForward(speed);
-  if(move.back) controls.moveForward(-speed);
-  if(move.left) controls.moveRight(-speed);
-  if(move.right) controls.moveRight(speed);
+  // Hitung gerakan dari joystick
+  const speed=0.15;
+  const forward = -moveY*speed/40;
+  const right = moveX*speed/40;
 
-  // Hantu bergerak sendiri
+  const dir = new THREE.Vector3(right,0,forward);
+  dir.applyEuler(camera.rotation);
+  camera.position.add(dir);
+
+  // Hantu jalan sendiri
   hantus.forEach(h=>{
     h.mesh.position.add(h.dir.clone().multiplyScalar(0.05));
     if(Math.abs(h.mesh.position.x)>24) h.dir.x*=-1;
@@ -142,7 +193,7 @@ animate();
 
 // ================== RESIZE ==================
 window.addEventListener('resize', ()=>{
-  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
