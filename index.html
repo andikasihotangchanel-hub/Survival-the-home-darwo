@@ -3,13 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rumah Hantu Darmo 3D</title>
+<title>Rumah Hantu Darmo FP Horror</title>
 <style>
   body { margin:0; overflow:hidden; background:#000; }
   canvas { display:block; }
+  #info { position:absolute; top:10px; left:10px; color:white; font-family:sans-serif; }
 </style>
 </head>
 <body>
+
+<div id="info">Klik layar untuk mulai. Gunakan WASD untuk bergerak, mouse untuk melihat.</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/examples/js/controls/PointerLockControls.js"></script>
@@ -17,7 +20,7 @@
 <script>
 // ================== SCENE ==================
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000000); // hitam netral, kecerahan dari lampu
+scene.background = new THREE.Color(0x000000); // hitam netral
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({antialias:true});
@@ -57,12 +60,11 @@ function createBox(x,y,z,sx,sy,sz,color){
   return mesh;
 }
 
-// Contoh benda
-createBox(5,1,5,4,2,2,0x8B4513); // meja coklat
+// Contoh benda di rumah
+createBox(5,1,5,4,2,2,0x8B4513); // meja
 createBox(3,1,5,1,2,1,0x654321); // kursi
 createBox(7,1,5,1,2,1,0x654321);
 createBox(-5,3,-5,3,6,2,0x4444aa); // lemari
-createBox(0,8,0,1,1,1,0xffffaa);   // lampu gantung
 createBox(-2,0.5,3,1,1,1,0xaa4444); // kotak
 
 // ================== PLAYER ==================
@@ -87,7 +89,6 @@ const hantus = [
 
 // ================== LAMPU DYNAMIC ==================
 let lamps = [];
-// Buat beberapa lampu pointLight di scene
 function createLamp(x,y,z,intensity){
   const lamp = new THREE.PointLight(0xffffff, intensity, 15);
   lamp.position.set(x,y,z);
@@ -96,7 +97,7 @@ function createLamp(x,y,z,intensity){
   return lamp;
 }
 
-// Contoh lampu
+// Lampu di rumah, jumlah menentukan kecerahan
 createLamp(0,8,0,1);   // lampu gantung
 createLamp(5,4,5,0.6); // lampu meja
 createLamp(-5,4,-5,0.4); // lampu lemari
@@ -127,7 +128,7 @@ function animate(){
   if(move.left) controls.moveRight(-speed);
   if(move.right) controls.moveRight(speed);
 
-  // Hantu jalan sendiri
+  // Hantu bergerak sendiri
   hantus.forEach(h=>{
     h.mesh.position.add(h.dir.clone().multiplyScalar(0.05));
     if(Math.abs(h.mesh.position.x)>24) h.dir.x*=-1;
