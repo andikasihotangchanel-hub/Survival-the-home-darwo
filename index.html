@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Bertahan Hidup: Rumah Hantu Darmo</title>
+<style>
+  body {
+    font-family: 'Arial', sans-serif;
+    background-color: #111;
+    color: #eee;
+    margin: 0;
+    padding: 0;
+  }
+  #game-container {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+  }
+  .scene {
+    display: none;
+  }
+  .scene.active {
+    display: block;
+    animation: fadeIn 1s;
+  }
+  button {
+    padding: 10px 15px;
+    margin: 10px 5px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #333;
+    color: #eee;
+    border: 1px solid #555;
+    border-radius: 5px;
+  }
+  button:hover {
+    background-color: #555;
+  }
+  @keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
+  }
+  .game-image {
+    width: 100%;
+    border-radius: 10px;
+    margin: 15px 0;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <h1>Game Bertahan Hidup: Rumah Hantu Darmo</h1>
+  <div id="scene1" class="scene active">
+    <p>Kamu berdiri di depan rumah hantu Darmo di Surabaya. Malam ini terlihat gelap dan sunyi.  
+    Apakah kamu berani masuk?</p>
+    <button onclick="nextScene('scene2')">Masuk Rumah</button>
+    <button onclick="nextScene('sceneEnd', 'Kamu memutuskan untuk pulang. Cerita berakhir.')">Lari Pulang</button>
+  </div>
+
+  <div id="scene2" class="scene">
+    <img src="https://i.imgur.com/3qVZ0A3.jpg" alt="Rumah Hantu Darmo" class="game-image">
+    <p>Di dalam rumah, terdengar suara aneh dari lantai atas. Pintu kamar tertutup rapat.  
+    Apa yang akan kamu lakukan?</p>
+    <button onclick="nextScene('scene3')">Naik ke Lantai Atas</button>
+    <button onclick="nextScene('scene4')">Periksa Lantai Bawah</button>
+  </div>
+
+  <div id="scene3" class="scene">
+    <p>Di lantai atas, kamu melihat bayangan hitam melintas. Tiba-tiba pintu tertutup sendiri!  
+    Kamu terjebak!</p>
+    <button onclick="nextScene('sceneEnd', 'Kamu berhasil melarikan diri setelah panik, tapi trauma seumur hidup.')">Coba Kabur</button>
+  </div>
+
+  <div id="scene4" class="scene">
+    <p>Di lantai bawah, kamu menemukan sebuah kotak misterius. Saat membukanya, lampu mati dan terdengar tawa seram.  
+    Apa yang akan kamu lakukan?</p>
+    <button onclick="nextScene('sceneEnd', 'Kamu berhasil menyalakan lampu lagi dan memutuskan keluar. Kamu selamat!')">Keluar Rumah</button>
+    <button onclick="nextScene('sceneEnd', 'Kotak itu ternyata jebakan. Kamu terkena kutukan!')">Membuka Kotak Lagi</button>
+  </div>
+
+  <div id="sceneEnd" class="scene">
+    <p id="endText"></p>
+    <button onclick="restartGame()">Main Lagi</button>
+  </div>
+</div>
+
+<script>
+function nextScene(sceneId, customText) {
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  const scene = document.getElementById(sceneId);
+  scene.classList.add('active');
+  if(customText) {
+    document.getElementById('endText').textContent = customText;
+  }
+}
+
+function restartGame() {
+  document.getElementById('endText').textContent = '';
+  nextScene('scene1');
+}
+</script>
+
+</body>
+</html>
