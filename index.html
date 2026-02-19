@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rumah Hantu Darmo 3D</title>
 <style>
-  body { margin:0; overflow:hidden; background:#222; }
+  body { margin:0; overflow:hidden; background:#000; }
   canvas { display:block; }
 </style>
 </head>
@@ -17,25 +17,17 @@
 <script>
 // ================== SCENE ==================
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x333333); // background gelap horor
+scene.background = new THREE.Color(0x000000); // hitam netral, kecerahan dari lampu
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// ================== LIGHT ==================
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-scene.add(ambientLight);
-
-const spotLight = new THREE.SpotLight(0xffaa00, 0.2);
-spotLight.position.set(0, 15, 0);
-scene.add(spotLight);
-
 // ================== FLOOR ==================
 const floor = new THREE.Mesh(
   new THREE.BoxGeometry(50,1,50),
-  new THREE.MeshStandardMaterial({color:0x555555})
+  new THREE.MeshStandardMaterial({color:0x444444})
 );
 floor.position.y = -0.5;
 scene.add(floor);
@@ -44,7 +36,7 @@ scene.add(floor);
 function createWall(x,z,rotation=0){
   const wall = new THREE.Mesh(
     new THREE.BoxGeometry(1,10,50),
-    new THREE.MeshStandardMaterial({color:0x777777})
+    new THREE.MeshStandardMaterial({color:0x666666})
   );
   wall.position.set(x,5,z);
   wall.rotation.y = rotation;
@@ -65,17 +57,13 @@ function createBox(x,y,z,sx,sy,sz,color){
   return mesh;
 }
 
-// Meja
-createBox(5,1,5,4,2,2,0x8B4513); // coklat
-// Kursi
-createBox(3,1,5,1,2,1,0x654321);
+// Contoh benda
+createBox(5,1,5,4,2,2,0x8B4513); // meja coklat
+createBox(3,1,5,1,2,1,0x654321); // kursi
 createBox(7,1,5,1,2,1,0x654321);
-// Lemari
-createBox(-5,3,-5,3,6,2,0x4444aa); 
-// Lampu gantung
-createBox(0,8,0,1,1,1,0xffffaa); 
-// Kotak tergeletak
-createBox(-2,0.5,3,1,1,1,0xaa4444);
+createBox(-5,3,-5,3,6,2,0x4444aa); // lemari
+createBox(0,8,0,1,1,1,0xffffaa);   // lampu gantung
+createBox(-2,0.5,3,1,1,1,0xaa4444); // kotak
 
 // ================== PLAYER ==================
 const controls = new THREE.PointerLockControls(camera, document.body);
@@ -97,6 +85,22 @@ const hantus = [
   {mesh:createHantu(-10,-5,0xff8844), dir:new THREE.Vector3(-1,0,0.5).normalize()}
 ];
 
+// ================== LAMPU DYNAMIC ==================
+let lamps = [];
+// Buat beberapa lampu pointLight di scene
+function createLamp(x,y,z,intensity){
+  const lamp = new THREE.PointLight(0xffffff, intensity, 15);
+  lamp.position.set(x,y,z);
+  scene.add(lamp);
+  lamps.push(lamp);
+  return lamp;
+}
+
+// Contoh lampu
+createLamp(0,8,0,1);   // lampu gantung
+createLamp(5,4,5,0.6); // lampu meja
+createLamp(-5,4,-5,0.4); // lampu lemari
+
 // ================== INPUT ==================
 const move = {forward:false,back:false,left:false,right:false};
 document.addEventListener('keydown', e=>{
@@ -116,8 +120,8 @@ document.addEventListener('keyup', e=>{
 function animate(){
   requestAnimationFrame(animate);
 
-  // Player
-  const speed=0.2;
+  // Player movement
+  const speed = 0.2;
   if(move.forward) controls.moveForward(speed);
   if(move.back) controls.moveForward(-speed);
   if(move.left) controls.moveRight(-speed);
