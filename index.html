@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rumah Hantu Darmo 3D</title>
 <style>
-  body { margin: 0; overflow: hidden; background: #111; }
+  body { margin: 0; overflow: hidden; background: #222; }
   canvas { display: block; }
 </style>
 </head>
@@ -17,7 +17,7 @@
 <script>
 // ================== SCENE ==================
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x111111); // gelap
+scene.background = new THREE.Color(0x444444); // abu-abu gelap, tidak hitam dan tidak putih
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 
@@ -26,17 +26,18 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // ================== LIGHT ==================
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); // sangat lembut
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // cukup terang untuk melihat objek
 scene.add(ambientLight);
 
-// Optional: sedikit spotlight untuk memberi kesan horor
 const spotLight = new THREE.SpotLight(0xffaa00, 0.2);
 spotLight.position.set(0, 15, 0);
 scene.add(spotLight);
 
 // ================== FLOOR ==================
-const floorMat = new THREE.MeshStandardMaterial({color:0x222222});
-const floor = new THREE.Mesh(new THREE.BoxGeometry(50,1,50), floorMat);
+const floor = new THREE.Mesh(
+  new THREE.BoxGeometry(50,1,50),
+  new THREE.MeshStandardMaterial({color:0x555555}) // abu-abu sedang
+);
 floor.position.y = -0.5;
 scene.add(floor);
 
@@ -44,7 +45,7 @@ scene.add(floor);
 function createWall(x,z,rotation=0){
   const wall = new THREE.Mesh(
     new THREE.BoxGeometry(1,10,50),
-    new THREE.MeshStandardMaterial({color:0x333333})
+    new THREE.MeshStandardMaterial({color:0x666666}) // dinding sedikit lebih terang
   );
   wall.position.set(x,5,z);
   wall.rotation.y = rotation;
@@ -62,15 +63,18 @@ camera.position.set(0,2,20);
 
 // ================== HANTU ==================
 function createHantu(x,z,color){
-  const mat = new THREE.MeshStandardMaterial({color:color, transparent:true, opacity:0.6});
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32), mat);
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.5,32,32),
+    new THREE.MeshStandardMaterial({color:color, transparent:true, opacity:0.6})
+  );
   mesh.position.set(x,0.5,z);
   scene.add(mesh);
   return mesh;
 }
+
 const hantus = [
-  {mesh:createHantu(10,10,0xff0000), dir:new THREE.Vector3(1,0,1).normalize()},
-  {mesh:createHantu(-10,-5,0xff5555), dir:new THREE.Vector3(-1,0,0.5).normalize()}
+  {mesh:createHantu(10,10,0xff4444), dir:new THREE.Vector3(1,0,1).normalize()},
+  {mesh:createHantu(-10,-5,0xff8844), dir:new THREE.Vector3(-1,0,0.5).normalize()}
 ];
 
 // ================== INPUT ==================
