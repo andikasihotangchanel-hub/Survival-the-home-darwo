@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bertahan Hidup: Rumah Hantu Darmo</title>
 <style>
-  body {
+  body, html {
     margin: 0;
+    padding: 0;
+    overflow: hidden;
     font-family: 'Arial', sans-serif;
     background-color: #000;
-    color: #eee;
-    overflow: hidden;
   }
   #game-container {
     position: relative;
@@ -20,118 +20,102 @@
     background-size: cover;
     background-position: center;
   }
-  #player {
-    position: absolute;
-    width: 40px;
-    height: 40px;
-    background-color: #00f;
-    bottom: 50px;
-    left: 50px;
-    border-radius: 5px;
-  }
   #message {
     position: absolute;
-    top: 10px;
+    bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0,0,0,0.7);
     padding: 10px 20px;
     border-radius: 5px;
     font-size: 18px;
+    color: #fff;
     display: none;
   }
   .hantu {
     position: absolute;
-    width: 40px;
-    height: 40px;
-    background-color: red;
+    width: 60px;
+    height: 60px;
+    background: rgba(255,0,0,0.5);
     border-radius: 50%;
-    display: none;
+    pointer-events: none;
   }
 </style>
 </head>
 <body>
 
 <div id="game-container">
-  <div id="player"></div>
   <div id="message"></div>
-  <div class="hantu" id="hantu1" style="top: 100px; left: 300px;"></div>
-  <div class="hantu" id="hantu2" style="top: 200px; left: 500px;"></div>
+  <div class="hantu" id="hantu1" style="top: 100px; left: 200px;"></div>
+  <div class="hantu" id="hantu2" style="top: 300px; left: 500px;"></div>
 </div>
 
 <audio id="scream" src="https://www.soundjay.com/human/sounds/scream-01.mp3"></audio>
-<audio id="footstep" src="https://www.soundjay.com/human/sounds/footsteps-1.mp3"></audio>
+<audio id="footstep" src="https://www.soundjay.com/human/sounds/footsteps-1.mp3" loop></audio>
 
 <script>
-const player = document.getElementById('player');
-const message = document.getElementById('message');
 const gameContainer = document.getElementById('game-container');
-const hantu1 = document.getElementById('hantu1');
-const hantu2 = document.getElementById('hantu2');
-const scream = document.getElementById('scream');
-const footstep = document.getElementById('footstep');
+const message = document.getElementById('message');
+const hantus = [
+  { el: document.getElementById('hantu1'), dx: 1, dy: 0.5 },
+  { el: document.getElementById('hantu2'), dx: -0.5, dy: 1 }
+];
 
-let playerPos = { x: 50, y: 50 };
-let gameOver = false;
+// Player invisible, tapi bisa “jalan” dengan tombol panah
+let playerPos = { x: 0, y: 0 };
 
-// Kontrol pemain WASD atau panah
 document.addEventListener('keydown', (e) => {
-  if(gameOver) return;
   const step = 20;
   if(e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') playerPos.y -= step;
   if(e.key === 'ArrowDown' || e.key.toLowerCase() === 's') playerPos.y += step;
   if(e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') playerPos.x -= step;
   if(e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') playerPos.x += step;
 
-  // Batasi agar tidak keluar rumah
-  playerPos.x = Math.max(0, Math.min(gameContainer.clientWidth - 40, playerPos.x));
-  playerPos.y = Math.max(0, Math.min(gameContainer.clientHeight - 40, playerPos.y));
+  // Batasi agar tidak keluar layar
+  playerPos.x = Math.max(0, Math.min(gameContainer.clientWidth, playerPos.x));
+  playerPos.y = Math.max(0, Math.min(gameContainer.clientHeight, playerPos.y));
 
-  player.style.left = playerPos.x + 'px';
-  player.style.top = playerPos.y + 'px';
-
-  // Putar suara langkah
+  // Mainkan suara langkah
+  const footstep = document.getElementById('footstep');
   footstep.currentTime = 0;
   footstep.play();
-
-  checkHantu();
 });
 
-// Fungsi hantu muncul acak
-function hantuMuncul(hantu) {
-  hantu.style.display = 'block';
-  scream.play();
-  message.textContent = "Hantu muncul! Lari!";
-  message.style.display = 'block';
-  setTimeout(() => {
-    message.style.display = 'none';
-    hantu.style.display = 'none';
-  }, 3000);
-}
-
-// Cek jika bertabrakan dengan hantu
-function checkHantu() {
-  const hantus = [hantu1, hantu2];
+// Fungsi hantu bergerak sendiri
+function moveHantu() {
   hantus.forEach(h => {
-    const hx = h.offsetLeft;
-    const hy = h.offsetTop;
-    if(Math.abs(playerPos.x - hx) < 40 && Math.abs(playerPos.y - hy) < 40) {
-      gameOver = true;
-      message.textContent = "Kamu tertangkap hantu! Game Over!";
-      message.style.display = 'block';
-      scream.play();
-    }
+    const rect = h.el.getBoundingClientRect();
+    let newX = rect.left + h.dx;
+    let newY = rect.top + h.dy;
+
+    // Pantulkan ke dinding rumah
+    if(newX < 0 || newX > gameContainer.clientWidth - rect.width) h.dx *= -1;
+    if(newY < 0 || newY > gameContainer.clientHeight - rect.height) h.dy *= -1;
+
+    h.el.style.left = (rect.left + h.dx) + 'px';
+    h.el.style.top = (rect.top + h.dy) + 'px';
   });
+  requestAnimationFrame(moveHantu);
 }
 
-// Hantu muncul acak setiap 5-10 detik
-setInterval(() => {
-  if(gameOver) return;
-  const hantuArray = [hantu1, hantu2];
-  const randomHantu = hantuArray[Math.floor(Math.random() * hantuArray.length)];
-  hantuMuncul(randomHantu);
-}, Math.random() * 5000 + 5000);
+// Tampilkan pesan horor acak
+function randomMessage() {
+  const messages = [
+    "Terdengar langkah di lantai atas...",
+    "Ada bayangan melintas di koridor...",
+    "Pintu berdecit dengan sendirinya...",
+    "Bisikan halus terdengar di telinga..."
+  ];
+  message.textContent = messages[Math.floor(Math.random()*messages.length)];
+  message.style.display = 'block';
+  setTimeout(() => message.style.display = 'none', 4000);
+}
 
+setInterval(randomMessage, 7000);
+
+// Start
+moveHantu();
 </script>
+
 </body>
 </html>
