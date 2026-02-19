@@ -3,104 +3,135 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Game Bertahan Hidup: Rumah Hantu Darmo</title>
+<title>Bertahan Hidup: Rumah Hantu Darmo</title>
 <style>
   body {
-    font-family: 'Arial', sans-serif;
-    background-color: #111;
-    color: #eee;
     margin: 0;
-    padding: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #000;
+    color: #eee;
+    overflow: hidden;
   }
   #game-container {
-    max-width: 800px;
-    margin: auto;
-    padding: 20px;
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background-image: url('https://i.imgur.com/3qVZ0A3.jpg'); /* Ganti dengan interior rumah Darmo */
+    background-size: cover;
+    background-position: center;
   }
-  .scene {
-    display: none;
-  }
-  .scene.active {
-    display: block;
-    animation: fadeIn 1s;
-  }
-  button {
-    padding: 10px 15px;
-    margin: 10px 5px;
-    font-size: 16px;
-    cursor: pointer;
-    background-color: #333;
-    color: #eee;
-    border: 1px solid #555;
+  #player {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background-color: #00f;
+    bottom: 50px;
+    left: 50px;
     border-radius: 5px;
   }
-  button:hover {
-    background-color: #555;
+  #message {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 18px;
+    display: none;
   }
-  @keyframes fadeIn {
-    from {opacity: 0;}
-    to {opacity: 1;}
-  }
-  .game-image {
-    width: 100%;
-    border-radius: 10px;
-    margin: 15px 0;
+  .hantu {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background-color: red;
+    border-radius: 50%;
+    display: none;
   }
 </style>
 </head>
 <body>
 
 <div id="game-container">
-  <h1>Game Bertahan Hidup: Rumah Hantu Darmo</h1>
-  <div id="scene1" class="scene active">
-    <p>Kamu berdiri di depan rumah hantu Darmo di Surabaya. Malam ini terlihat gelap dan sunyi.  
-    Apakah kamu berani masuk?</p>
-    <button onclick="nextScene('scene2')">Masuk Rumah</button>
-    <button onclick="nextScene('sceneEnd', 'Kamu memutuskan untuk pulang. Cerita berakhir.')">Lari Pulang</button>
-  </div>
-
-  <div id="scene2" class="scene">
-    <img src="https://i.imgur.com/3qVZ0A3.jpg" alt="Rumah Hantu Darmo" class="game-image">
-    <p>Di dalam rumah, terdengar suara aneh dari lantai atas. Pintu kamar tertutup rapat.  
-    Apa yang akan kamu lakukan?</p>
-    <button onclick="nextScene('scene3')">Naik ke Lantai Atas</button>
-    <button onclick="nextScene('scene4')">Periksa Lantai Bawah</button>
-  </div>
-
-  <div id="scene3" class="scene">
-    <p>Di lantai atas, kamu melihat bayangan hitam melintas. Tiba-tiba pintu tertutup sendiri!  
-    Kamu terjebak!</p>
-    <button onclick="nextScene('sceneEnd', 'Kamu berhasil melarikan diri setelah panik, tapi trauma seumur hidup.')">Coba Kabur</button>
-  </div>
-
-  <div id="scene4" class="scene">
-    <p>Di lantai bawah, kamu menemukan sebuah kotak misterius. Saat membukanya, lampu mati dan terdengar tawa seram.  
-    Apa yang akan kamu lakukan?</p>
-    <button onclick="nextScene('sceneEnd', 'Kamu berhasil menyalakan lampu lagi dan memutuskan keluar. Kamu selamat!')">Keluar Rumah</button>
-    <button onclick="nextScene('sceneEnd', 'Kotak itu ternyata jebakan. Kamu terkena kutukan!')">Membuka Kotak Lagi</button>
-  </div>
-
-  <div id="sceneEnd" class="scene">
-    <p id="endText"></p>
-    <button onclick="restartGame()">Main Lagi</button>
-  </div>
+  <div id="player"></div>
+  <div id="message"></div>
+  <div class="hantu" id="hantu1" style="top: 100px; left: 300px;"></div>
+  <div class="hantu" id="hantu2" style="top: 200px; left: 500px;"></div>
 </div>
 
+<audio id="scream" src="https://www.soundjay.com/human/sounds/scream-01.mp3"></audio>
+<audio id="footstep" src="https://www.soundjay.com/human/sounds/footsteps-1.mp3"></audio>
+
 <script>
-function nextScene(sceneId, customText) {
-  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
-  const scene = document.getElementById(sceneId);
-  scene.classList.add('active');
-  if(customText) {
-    document.getElementById('endText').textContent = customText;
-  }
+const player = document.getElementById('player');
+const message = document.getElementById('message');
+const gameContainer = document.getElementById('game-container');
+const hantu1 = document.getElementById('hantu1');
+const hantu2 = document.getElementById('hantu2');
+const scream = document.getElementById('scream');
+const footstep = document.getElementById('footstep');
+
+let playerPos = { x: 50, y: 50 };
+let gameOver = false;
+
+// Kontrol pemain WASD atau panah
+document.addEventListener('keydown', (e) => {
+  if(gameOver) return;
+  const step = 20;
+  if(e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') playerPos.y -= step;
+  if(e.key === 'ArrowDown' || e.key.toLowerCase() === 's') playerPos.y += step;
+  if(e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') playerPos.x -= step;
+  if(e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') playerPos.x += step;
+
+  // Batasi agar tidak keluar rumah
+  playerPos.x = Math.max(0, Math.min(gameContainer.clientWidth - 40, playerPos.x));
+  playerPos.y = Math.max(0, Math.min(gameContainer.clientHeight - 40, playerPos.y));
+
+  player.style.left = playerPos.x + 'px';
+  player.style.top = playerPos.y + 'px';
+
+  // Putar suara langkah
+  footstep.currentTime = 0;
+  footstep.play();
+
+  checkHantu();
+});
+
+// Fungsi hantu muncul acak
+function hantuMuncul(hantu) {
+  hantu.style.display = 'block';
+  scream.play();
+  message.textContent = "Hantu muncul! Lari!";
+  message.style.display = 'block';
+  setTimeout(() => {
+    message.style.display = 'none';
+    hantu.style.display = 'none';
+  }, 3000);
 }
 
-function restartGame() {
-  document.getElementById('endText').textContent = '';
-  nextScene('scene1');
+// Cek jika bertabrakan dengan hantu
+function checkHantu() {
+  const hantus = [hantu1, hantu2];
+  hantus.forEach(h => {
+    const hx = h.offsetLeft;
+    const hy = h.offsetTop;
+    if(Math.abs(playerPos.x - hx) < 40 && Math.abs(playerPos.y - hy) < 40) {
+      gameOver = true;
+      message.textContent = "Kamu tertangkap hantu! Game Over!";
+      message.style.display = 'block';
+      scream.play();
+    }
+  });
 }
+
+// Hantu muncul acak setiap 5-10 detik
+setInterval(() => {
+  if(gameOver) return;
+  const hantuArray = [hantu1, hantu2];
+  const randomHantu = hantuArray[Math.floor(Math.random() * hantuArray.length)];
+  hantuMuncul(randomHantu);
+}, Math.random() * 5000 + 5000);
+
 </script>
-
 </body>
 </html>
