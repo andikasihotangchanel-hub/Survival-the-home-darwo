@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rumah Hantu Darmo HP</title>
+<title>Rumah Hantu Darmo 3 Lantai</title>
 <style>
   body { margin:0; overflow:hidden; background:#000; touch-action: none; }
   canvas { display:block; }
@@ -44,34 +44,38 @@
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 500);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// ================== FLOOR & WALLS ==================
-const floor = new THREE.Mesh(
-  new THREE.BoxGeometry(50,1,50),
-  new THREE.MeshStandardMaterial({color:0x444444})
-);
-floor.position.y=-0.5;
-scene.add(floor);
+// ================== LIGHT ==================
+const ambientLight = new THREE.AmbientLight(0xffffff,0.2);
+scene.add(ambientLight);
 
-function createWall(x,z,rotation=0){
+// ================== FLOOR & WALLS ==================
+function createFloor(y){
+  const floor = new THREE.Mesh(
+    new THREE.BoxGeometry(50,1,50),
+    new THREE.MeshStandardMaterial({color:0x444444})
+  );
+  floor.position.y=y;
+  scene.add(floor);
+  return floor;
+}
+
+function createWall(x,z,y,height,rotation=0){
   const wall = new THREE.Mesh(
-    new THREE.BoxGeometry(1,10,50),
+    new THREE.BoxGeometry(1,height,50),
     new THREE.MeshStandardMaterial({color:0x666666})
   );
-  wall.position.set(x,5,z);
+  wall.position.set(x,y,z);
   wall.rotation.y = rotation;
   scene.add(wall);
+  return wall;
 }
-createWall(-25,0);
-createWall(25,0);
-createWall(0,-25, Math.PI/2);
-createWall(0,25, Math.PI/2);
 
-// ================== Benda-Benda ==================
+// ================== Benda-Benda Rumah ==================
 function createBox(x,y,z,sx,sy,sz,color){
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(sx,sy,sz),
@@ -82,47 +86,81 @@ function createBox(x,y,z,sx,sy,sz,color){
   return mesh;
 }
 
-// Contoh benda
-createBox(5,1,5,4,2,2,0x8B4513); // meja
-createBox(3,1,5,1,2,1,0x654321); // kursi
-createBox(7,1,5,1,2,1,0x654321);
-createBox(-5,3,-5,3,6,2,0x4444aa); // lemari
-createBox(-2,0.5,3,1,1,1,0xaa4444); // kotak
+// ================== 3 LANTAI ==================
+const lantai1 = createFloor(0);
+const lantai2 = createFloor(10);
+const lantai3 = createFloor(20);
 
-// ================== LIGHT ==================
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
-scene.add(ambientLight);
+// Lantai 3
+createWall(-25,0,20,10); createWall(25,0,20,10); 
+createWall(0,-25,25,10,Math.PI/2); createWall(0,25,25,10,Math.PI/2);
 
+// Spawn player di lantai 3 kamar tidur
+camera.position.set(0,21,10);
+
+// Lantai 2
+createWall(-25,0,10,10); createWall(25,0,10,10);
+createWall(0,-25,10,10,Math.PI/2); createWall(0,25,10,10,Math.PI/2);
+
+// Lantai 1
+createWall(-25,0,0,10); createWall(25,0,0,10);
+createWall(0,-25,0,10,Math.PI/2); createWall(0,25,0,10,Math.PI/2);
+
+// ================== Tangga ==================
+createBox(2,15,0,2,10,5,0x888888); // tangga lantai 2->3
+createBox(2,5,0,2,10,5,0x888888);  // tangga lantai1->2
+
+// ================== Pintu dengan darah ==================
+function createDoor(x,y,z,color=0x552222){
+  const door = new THREE.Mesh(
+    new THREE.BoxGeometry(2,4,0.3),
+    new THREE.MeshStandardMaterial({color:color})
+  );
+  door.position.set(x,y,z);
+  scene.add(door);
+  return door;
+}
+
+// Lantai 3
+createDoor(10,21,-10); // kamar 2
+createDoor(-10,21,10); // tangga turun
+// Lantai 1
+createDoor(-10,1,10); // ruang tamu
+createDoor(0,1,-10);  // ruang makan
+createDoor(10,1,0);   // kamar tidur
+
+// ================== Ruang pesugihan di lantai 2 ==================
+createBox(0,11,5,5,3,5,0x333300);
+
+// ================== Kamar mandi lantai 2 ==================
+createBox(-10,11,-5,4,3,4,0x555555);
+
+// ================== Hantu ==================
+function createHantu(x,z,y,color){
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.5,32,32),
+    new THREE.MeshStandardMaterial({color:color, transparent:true, opacity:0.6})
+  );
+  mesh.position.set(x,y,z);
+  scene.add(mesh);
+  return mesh;
+}
+
+const hantus = [
+  {mesh:createHantu(5,5,21,0xff4444), dir:new THREE.Vector3(1,0,1).normalize()},
+  {mesh:createHantu(-5,-5,11,0xff8844), dir:new THREE.Vector3(-1,0,0.5).normalize()}
+];
+
+// ================== LAMPU ==================
 function createLamp(x,y,z,intensity){
   const lamp = new THREE.PointLight(0xffffff,intensity,15);
   lamp.position.set(x,y,z);
   scene.add(lamp);
   return lamp;
 }
-
-// Lampu rumah
-createLamp(0,8,0,1);
-createLamp(5,4,5,0.6);
-createLamp(-5,4,-5,0.4);
-
-// ================== HANTU ==================
-function createHantu(x,z,color){
-  const mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(0.5,32,32),
-    new THREE.MeshStandardMaterial({color:color, transparent:true, opacity:0.6})
-  );
-  mesh.position.set(x,0.5,z);
-  scene.add(mesh);
-  return mesh;
-}
-const hantus = [
-  {mesh:createHantu(10,10,0xff4444), dir:new THREE.Vector3(1,0,1).normalize()},
-  {mesh:createHantu(-10,-5,0xff8844), dir:new THREE.Vector3(-1,0,0.5).normalize()}
-];
-
-// ================== CAMERA ==================
-camera.position.set(0,2,20);
-let velocity = new THREE.Vector3(0,0,0);
+createLamp(0,21,0,1);
+createLamp(5,11,5,0.6);
+createLamp(-5,1,-5,0.4);
 
 // ================== JOYSTICK ==================
 const joystickBase = document.getElementById('joystickBase');
@@ -143,9 +181,8 @@ joystickBase.addEventListener('touchmove', e=>{
     if(t.identifier === touchId){
       moveX = t.clientX - startX;
       moveY = t.clientY - startY;
-      // batas stick
       const maxDist = 40;
-      const dist = Math.min(maxDist, Math.sqrt(moveX*moveX + moveY*moveY));
+      const dist = Math.min(maxDist, Math.sqrt(moveX*moveX+moveY*moveY));
       const angle = Math.atan2(moveY, moveX);
       joystickStick.style.left = `${25 + dist*Math.cos(angle)}px`;
       joystickStick.style.top = `${25 + dist*Math.sin(angle)}px`;
@@ -156,10 +193,9 @@ joystickBase.addEventListener('touchmove', e=>{
 joystickBase.addEventListener('touchend', e=>{
   e.preventDefault();
   for(let t of e.changedTouches){
-    if(t.identifier === touchId){
-      touchId = null;
-      moveX=0;
-      moveY=0;
+    if(t.identifier===touchId){
+      touchId=null;
+      moveX=0; moveY=0;
       joystickStick.style.left='25px';
       joystickStick.style.top='25px';
     }
@@ -170,16 +206,15 @@ joystickBase.addEventListener('touchend', e=>{
 function animate(){
   requestAnimationFrame(animate);
 
-  // Hitung gerakan dari joystick
-  const speed=0.15;
+  // Gerakan player
+  const speed = 0.15;
   const forward = -moveY*speed/40;
   const right = moveX*speed/40;
-
   const dir = new THREE.Vector3(right,0,forward);
   dir.applyEuler(camera.rotation);
   camera.position.add(dir);
 
-  // Hantu jalan sendiri
+  // Hantu bergerak
   hantus.forEach(h=>{
     h.mesh.position.add(h.dir.clone().multiplyScalar(0.05));
     if(Math.abs(h.mesh.position.x)>24) h.dir.x*=-1;
